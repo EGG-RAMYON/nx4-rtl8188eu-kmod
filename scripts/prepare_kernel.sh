@@ -17,6 +17,8 @@ mkdir -p "$CACHE"
 CACHE=$(cd "$CACHE" && pwd)
 for cmd in python3 unzip curl git tar xz make gcc bc sha256sum; do command -v "$cmd" >/dev/null; done
 check() { printf '%s  %s\n' "$1" "$2" | sha256sum -c -; }
+mkdir -p "$WORK/logs" "$WORK/results/experimental"
+sha256sum "$R6" > "$WORK/logs/R6_archive.sha256"
 unzip -tq "$R6" >/dev/null
 
 KERNEL="$CACHE/linux-3.18.24.tar.xz"
@@ -34,7 +36,6 @@ test -z "$(git -C "$TOOL" status --porcelain --untracked-files=no)"
 CROSS="$TOOL/bin/arm-linux-androideabi-"
 "${CROSS}gcc" --version
 mkdir -p "$WORK/logs" "$WORK/results/experimental"
-sha256sum "$R6" > "$WORK/logs/R6_archive.sha256"
 unzip -q "$R6" 'AVNT+STD+G50+WIDE+R6/AVNT5W_TCC803XKK_kernel/*' -d "$WORK/vendor"
 VENDOR="$WORK/vendor/AVNT+STD+G50+WIDE+R6/AVNT5W_TCC803XKK_kernel"
 tar -xJf "$KERNEL" -C "$WORK"
