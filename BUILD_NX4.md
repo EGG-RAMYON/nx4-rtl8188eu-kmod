@@ -61,4 +61,4 @@ bash scripts/build.sh \
 - GCC clone/커널 다운로드 실패: 네트워크가 허용된 Linux 빌드 호스트에서 다시 준비합니다.
 - `invalid module format` 또는 unknown symbols: 실행 중인 차량 커널의 `uname -r`, 모듈 vermagic, 커널 ABI와 설정이 일치하는지 확인합니다.
 
-설정 파일, 분할 커널 소스, 빌드 로그, 진단 결과에는 장치나 차량별 정보가 들어갈 수 있으므로 Release에 첨부하지 않습니다.
+빌드 결과의 USB ID·vermagic·SHA-256 검증은 목표 식별과 정적 ABI 정보를 확인하는 단계이며 실차 Wi-Fi 통신을 보증하지 않습니다. 성공 시험에 사용한 바이너리의 SHA-256과 빌드 기록을 별도로 대조하세요. 공개 설정·분할 커널 소스·원시 로그는 Release에 첨부하지 않습니다. 현재 실차 결과와 바이너리 추적성 상태는 [VALIDATION.md](VALIDATION.md)를 참조하세요.
