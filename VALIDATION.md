@@ -47,13 +47,13 @@ Wi-Fi/IP 통신이 성공한 뒤에도 v1.0.3 서비스에서 약 10초 간격�
 
 | 대상 | 확인된 식별 정보 | 결론 |
 |---|---|---|
-| NEMESIS v1.0.3 Library 패키지의 `modules/r8188eu.ko` 후보 | 패키지 SHA-256 `0b3d46d7374377075417f8ce9eb22e48645b48559497ca05b47e59d19ef47f08`; 모듈 SHA-256 `0365d9267aa5c1d4c587646bbc354e047f51e9f78424dd4e54e2bbb78e342c02`; Build ID `78d1271e7bde864b2489040a0083d465f19c76c2`; srcversion `5543A85AAE96D4241B7D1F0`; marker `NX4D1_20261104`; vermagic `3.18.24-tcc SMP preempt mod_unload ARMv7 p2v8` | NX4 대상 ABI 및 진단 마커와 일치하는 패키지 후보. 실차 성공 모듈의 hash와 같은지 확인할 기록이 없어 성공 바이너리와 동일하다고 할 수 없음 |
+| `nx4.rtl8188eu.zip` 및 NEMESIS v1.0.3 패키지의 `modules/r8188eu.ko` 후보 | 앞선 패키지 SHA-256 `ea8566b36bda38db4900b1bc85a829aed2e2aecc5c79c873cb580f44a49be82f`; v1.0.3 패키지 SHA-256 `0b3d46d7374377075417f8ce9eb22e48645b48559497ca05b47e59d19ef47f08`; 두 패키지에 든 모듈 SHA-256 동일: `0365d9267aa5c1d4c587646bbc354e047f51e9f78424dd4e54e2bbb78e342c02`; Build ID `78d1271e7bde864b2489040a0083d465f19c76c2`; srcversion `5543A85AAE96D4241B7D1F0`; marker `NX4D1_20261104`; vermagic `3.18.24-tcc SMP preempt mod_unload ARMv7 p2v8` | 두 패키지 사이는 모듈 byte-identical임. 실차 성공 모듈의 hash와 같은지 확인할 기록은 없어, 성공 바이너리와 동일하다고 단정하지 않음 |
 | 이전 load-only preflight 모듈 | SHA-256 `cfc5d76e124a647d983c0de941a37e0dd0b59cdd2a3cb9353c078aecf379b408`; srcversion `1872C91590829C51245CD94`; NX4 진단 마커 없음 | `insmod`만 성공한 별도 바이너리. Wi-Fi 성공 모듈 또는 v1.0.3 후보로 간주하지 않음 |
 | 현재 공개 소스 | `main`의 `driver-src/include/nx4_diag.h`에 동일한 진단 마커 문자열 | 마커 문자열만으로 바이너리 동일성이나 재현 빌드를 증명하지 못함 |
 | GitHub Release | 2026-11-05 조회 결과 없음 | 공개 Release 바이너리와의 비교 불가 |
 
 ### 추적성 결론
 
-v1.0.3 패키지 후보에는 사용자가 보고한 시험 환경과 일치하는 진단 마커, USB ID 및 vermagic이 있습니다. 하지만 테스트 직후 저장한 성공 `.ko` 자체의 SHA-256이나, 그 모듈을 만드는 빌드 기록이 현재 확인되지 않았습니다. 따라서 marker와 ABI 일치는 정황 증거일 뿐, byte-for-byte 동일성 또는 현재 공개 소스에서 나온 재현 빌드의 증명이 아닙니다. 후보 모듈을 실차 성공 Release asset으로 올리거나 그렇게 표시하지 않습니다.
+두 패키지 안의 모듈은 SHA-256까지 동일하며, 사용자가 보고한 시험 환경과 일치하는 진단 마커·USB ID·vermagic을 가집니다. 하지만 테스트 직후 차량에서 추출하거나 해시를 기록한 성공 `.ko` 및 그 모듈의 빌드 기록이 현재 확인되지 않았습니다. 따라서 marker와 ABI 일치는 정황 증거일 뿐, byte-for-byte 동일성 또는 현재 공개 소스에서 나온 재현 빌드의 증명이 아닙니다. 후보 모듈을 실차 성공 Release asset으로 올리거나 그렇게 표시하지 않습니다.
 
 확정하려면 성공 시험에 사용한 모듈 파일의 SHA-256을 확보한 뒤 v1.0.3 후보와 비교하거나, 공개 저장소의 특정 commit에서 NX4 R6 설정·고정 툴체인으로 새로 빌드하고 build manifest / module SHA-256을 보존해야 합니다. 설정 및 원시 로그는 비공개로 두고, Release에는 모듈·manifest·checksum만 포함합니다.
