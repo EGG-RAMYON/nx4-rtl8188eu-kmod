@@ -24,3 +24,5 @@
 차량별 빌드 및 진단 기록은 공개 저장소에서 제외한다. 패치는 고지 추가 전 변경을 보존하며, 현재 driver-src에는 이미 포팅 및 진단 수정이 적용되어 있다.
 
 - 2026-11-05: 사용자 제공 실차 결과(무선 연결, DHCP, 인터넷, Wireless ADB)를 단계별 검증 문서로 추가. Android Auto 상호작용과 NEMESIS 서비스 상태 판별을 별도 이슈로 분리. 성공 바이너리와 공개 소스의 byte identity는 미확인으로 명시.
+
+- 2026-11-05: `prepare_kernel.sh` and `BUILD_NX4.md` now take the complete `AVNT+STD+G50+WIDE+R6.zip`; archive SHA-256 is recorded locally. Prepared an explicitly unverified release candidate and notes; no Release was published.
