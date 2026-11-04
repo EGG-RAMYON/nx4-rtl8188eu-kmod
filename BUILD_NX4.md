@@ -4,7 +4,7 @@
 
 ## 입력 파일
 
-- 제조사 R6 커널 소스 분할 파일 `AVNT+STD+G50+WIDE+R6.zip.001`, `AVNT+STD+G50+WIDE+R6.zip.002`
+- 사용자가 준비한 완전한 제조사 압축 파일 `$HOME/private/nx4/AVNT+STD+G50+WIDE+R6.zip`
 - NX4 대상 시스템에서 확보한 정확한 `.config`
 - Bash, Python 3, unzip, curl, git, tar, xz, make, GCC, bc, sha256sum, binutils
 
@@ -25,7 +25,7 @@ bash scripts/prepare_kernel.sh \
   "$WORK"
 ```
 
-스크립트는 분할 파일의 SHA-256을 확인하고 Linux 3.18.24 커널 기반에 R6 커널 소스를 적용합니다. 지정한 `.config`를 `$WORK/out/.config`로 복사한 뒤 `olddefconfig` 및 `modules_prepare`를 실행합니다. `olddefconfig` 후 설정이 한 줄이라도 달라지면 빌드를 중단합니다. 로그는 `$WORK/logs/` 아래에 남습니다.
+스크립트는 완전한 R6 ZIP의 무결성(`unzip -tq`)을 검사하고 입력 파일의 SHA-256을 `$WORK/logs/R6_archive.sha256`에 기록한 뒤 Linux 3.18.24 커널 기반에 R6 커널 소스를 적용합니다. 사용자가 ZIP을 분할 업로드했더라도 먼저 원본 ZIP으로 복원한 파일 하나를 지정하면 됩니다. 현재 공개된 원본 ZIP의 고정 SHA-256은 없으므로 기록된 해시와 신뢰하는 원본의 해시를 비교하세요. 지정한 `.config`를 `$WORK/out/.config`로 복사한 뒤 `olddefconfig` 및 `modules_prepare`를 실행합니다. `olddefconfig` 후 설정이 한 줄이라도 달라지면 빌드를 중단합니다. 로그는 `$WORK/logs/` 아래에 남습니다.
 
 처음 실행할 때 커널 기준 소스와 고정 커밋의 Android ARM GCC 4.7 툴체인을 다운로드합니다. 네트워크 접속이 되는 Linux 빌드 호스트에서 실행하세요. 준비가 끝나면 경로는 다음과 같습니다.
 
@@ -57,7 +57,7 @@ bash scripts/build.sh \
 
 - `Set VEHICLE_KERNEL_CONFIG`: 환경 변수가 실제 `.config` 파일을 가리키는지 확인합니다.
 - `vehicle config differs`: 실행 중 커널 설정을 수정하지 말고, 정확한 NX4 설정과 R6 소스 조합인지 확인합니다.
-- hash mismatch: 입력 분할 파일이 안내된 R6 원본인지 확인하고, 임의로 검사를 제거하지 마세요.
+- ZIP 무결성/내부 경로 오류: 완전한 `AVNT+STD+G50+WIDE+R6.zip`인지, 손상되지 않았는지 확인하세요. `$WORK/logs/R6_archive.sha256`로 실행에 사용한 파일을 식별할 수 있습니다.
 - GCC clone/커널 다운로드 실패: 네트워크가 허용된 Linux 빌드 호스트에서 다시 준비합니다.
 - `invalid module format` 또는 unknown symbols: 실행 중인 차량 커널의 `uname -r`, 모듈 vermagic, 커널 ABI와 설정이 일치하는지 확인합니다.
 
