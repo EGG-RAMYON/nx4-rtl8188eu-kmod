@@ -20,8 +20,7 @@ WORK="$HOME/build/nx4-r6"
 mkdir -p "$WORK"
 
 bash scripts/prepare_kernel.sh \
-  "$HOME/private/nx4/AVNT+STD+G50+WIDE+R6.zip.001" \
-  "$HOME/private/nx4/AVNT+STD+G50+WIDE+R6.zip.002" \
+  "$HOME/private/nx4/AVNT+STD+G50+WIDE+R6.zip" \
   "$WORK"
 ```
 
