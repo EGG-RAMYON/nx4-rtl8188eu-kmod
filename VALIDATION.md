@@ -22,9 +22,9 @@
 | Module Loaded | 성공 | `insmod r8188eu.ko nx4_diag=1` 반환값 0, `/proc/modules`에 `r8188eu` |
 | USB Enumerated | 성공 | RTL8188EU USB ID `0bda:8179` 인식 |
 | `wlan0` Created | 성공 | `wlan0` 생성 및 활성화 |
-| Link Up | 성공 | `operstate=up`, `carrier=1`; 링크 품질·신호 지표 확인 |
+| Link Up | 성공 | `operstate=up`, `carrier=1`; 링크 품질 70/70, 신호 세기 -28 dBm |
 | DHCP | 성공 | `dhcpcd` 실행 및 주소 할당 |
-| Internet | 성공 | 숫자 IP 대상 ping, DNS 이름 조회 후 ping; route lookup은 외부 목적지에 대해 `wlan0`를 선택 |
+| Internet | 성공 | 숫자 IP 대상 ping 3/3, DNS 이름 조회 후 ping 3/3; route lookup은 외부 목적지에 대해 `wlan0`를 선택 |
 | Wireless ADB | 성공 | TCP 5555 연결, PC의 `adb connect` 후 `device` 상태 및 셸 실행 |
 
 이 결과는 한 차례의 특정 실차 구성 성공으로 기록합니다. 반복성, 다른 네트워크·차량·헤드유닛 조합, 장시간 안정성은 이 표로 입증되지 않습니다.
