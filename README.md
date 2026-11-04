@@ -8,6 +8,14 @@
 
 이 결과는 Linux `3.18.24-tcc`, ARMv7, Android 4.4.2, NEMESIS v1.16.7 및 특정 AVNT R6/N150L 구성에서 보고된 실차 성공입니다. 다른 헤드유닛, 차량, 커널, 동글에 대한 호환성을 보장하지 않습니다.
 
+### 실차 화면 기록
+
+아래 사진은 시험 대상 헤드유닛의 소프트웨어 정보, Engineering mode의 Wi-Fi 시스템 정보, 그리고 차량 화면에서 AP가 연결된 상태를 보여줍니다. Engineering mode 사진은 내장 Wi-Fi 정보에 대한 참고이며, USB RTL8188EU 자체의 연결 성공을 증명하지는 않습니다. 사진만으로 IP 통신이나 Wireless ADB까지 확인되는 것은 아니며, 그 결과는 [단계별 검증 기록](VALIDATION.md)을 참조하세요. SSID는 가렸고 MAC 주소는 일부만 표시했습니다.
+
+| 헤드유닛 소프트웨어 정보 | Engineering mode Wi-Fi 정보 | Wi-Fi AP 연결 화면 |
+|---|---|---|
+| ![AVNT software information](docs/images/01-headunit-software-info.jpg) | ![Engineering mode Wi-Fi information; MAC partially masked](docs/images/02-engineering-wifi-info.jpg) | ![Wi-Fi AP shown as connected](docs/images/03-wifi-connected-screen.jpg) |
+
 ## 진단 방향
 
 - 해당 환경에서 커널 모듈과 Wi-Fi/IP 통신은 성공했습니다. 이전의 `insmod` 성공만 있거나 `wlan0`가 없던 캡처는 별도의 이전 상태이며, 이후 성공 결과를 덮어쓰지 않습니다.
