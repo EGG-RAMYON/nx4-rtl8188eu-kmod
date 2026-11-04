@@ -1,0 +1,4 @@
+*.ko
+*.o
+__pycache__/
+NEMESIS.data
