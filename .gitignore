@@ -1,4 +1,17 @@
 *.ko
 *.o
+*.cmd
+*.mod.c
+Module.symvers
+modules.order
 __pycache__/
+.cache/
+work/
+cache/
+build/
+NX4_DIAG_RESULTS/
+NX4_DIAG_LAUNCH.txt
 NEMESIS.data
+*.zip
+*.zip.001
+*.zip.002

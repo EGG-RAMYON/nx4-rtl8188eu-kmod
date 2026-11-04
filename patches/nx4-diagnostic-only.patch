@@ -1,0 +1,497 @@
+--- a/core/rtw_pwrctrl.c
++++ b/core/rtw_pwrctrl.c
+@@ -15,6 +15,7 @@
+ #define _RTW_PWRCTRL_C_
+ 
+ #include <drv_types.h>
++#include <nx4_diag.h>
+ #include <hal_data.h>
+ #include <hal_com_h2c.h>
+ 
+@@ -2414,6 +2415,7 @@
+ 	int i;
+ 	systime start = rtw_get_current_time();
+ 
++	NX4_DIAG("WAKE enter caller=%s suspend=%u keepfw=%u rfstate=%u", caller, pwrpriv->bInSuspend, pwrpriv->bkeepfwalive, pwrpriv->rf_pwrstate);
+ 	/* for LPS */
+ 	LeaveAllPowerSaveMode(padapter);
+ 
+@@ -2549,6 +2551,7 @@
+ exit:
+ 	if (rtw_time_after(rtw_get_current_time() + rtw_ms_to_systime(ips_deffer_ms), pwrpriv->ips_deny_time))
+ 		pwrpriv->ips_deny_time = rtw_get_current_time() + rtw_ms_to_systime(ips_deffer_ms);
++	NX4_DIAG("WAKE exit ret=%d suspend=%u rfstate=%u stopped=%u hwinit=%u", ret, pwrpriv->bInSuspend, pwrpriv->rf_pwrstate, rtw_is_drv_stopped(padapter), rtw_get_hw_init_completed(padapter));
+ 	return ret;
+ 
+ }
+--- a/hal/HalPwrSeqCmd.c
++++ b/hal/HalPwrSeqCmd.c
+@@ -29,6 +29,7 @@
+ 
+ --*/
+ #include <HalPwrSeqCmd.h>
++#include <nx4_diag.h>
+ 
+ 
+ /*
+@@ -135,6 +136,7 @@
+ 						rtw_udelay_os(10);
+ 
+ 					if (pollingCount++ > maxPollingCnt) {
++						NX4_DIAG("POWER_POLL timeout step=%u offset=0x%x masked_value=0x%x mask=0x%x expected=0x%x polls=%u", AryIdx, offset, value, GET_PWR_CFG_MASK(PwrCfgCmd), GET_PWR_CFG_VALUE(PwrCfgCmd) & GET_PWR_CFG_MASK(PwrCfgCmd), pollingCount);
+ 						RTW_ERR("HalPwrSeqCmdParsing: Fail to polling Offset[%#x]=%02x\n", offset, value);
+ 
+ 						/* For PCIE + USB package poll power bit timeout issue only modify 8821AE and 8723BE */
+--- a/hal/hal_intf.c
++++ b/hal/hal_intf.c
+@@ -16,6 +16,7 @@
+ #define _HAL_INTF_C_
+ 
+ #include <drv_types.h>
++#include <nx4_diag.h>
+ #include <hal_data.h>
+ 
+ const u32 _chip_type_to_odm_ic_type[] = {
+@@ -186,7 +187,9 @@
+ 	u32 ret = 0;
+ 	PHAL_DATA_TYPE pHalData = GET_HAL_DATA(padapter);
+ 
++	NX4_DIAG("POWER_ON enter");
+ 	ret = padapter->hal_func.hal_power_on(padapter);
++	NX4_DIAG("POWER_ON exit ret=%u", ret);
+ 
+ #ifdef CONFIG_BT_COEXIST
+ 	if ((ret == _SUCCESS) && (pHalData->EEPROMBluetoothCoexist == _TRUE))
+@@ -241,7 +244,9 @@
+ 	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+ 	int i;
+ 
++	NX4_DIAG("HAL enter");
+ 	status = padapter->hal_func.hal_init(padapter);
++	NX4_DIAG("HAL chip_init ret=%u", status);
+ 
+ 	if (status == _SUCCESS) {
+ 		rtw_set_hw_init_completed(padapter, _TRUE);
+@@ -277,6 +282,7 @@
+ 	}
+ 
+ 
++	NX4_DIAG("HAL exit ret=%u hwinit=%u", status, rtw_get_hw_init_completed(padapter));
+ 	return status;
+ 
+ }
+--- a/hal/rtl8188e/rtl8188e_hal_init.c
++++ b/hal/rtl8188e/rtl8188e_hal_init.c
+@@ -15,6 +15,7 @@
+ #define _HAL_INIT_C_
+ 
+ #include <drv_types.h>
++#include <nx4_diag.h>
+ #include <rtl8188e_hal.h>
+ #ifdef CONFIG_SFW_SUPPORTED
+ #include "hal8188e_s_fw.h"
+@@ -802,6 +803,7 @@
+ 	RTW_INFO("%s: Checksum report %s! (%u, %dms), REG_MCUFWDL:0x%08x\n", __FUNCTION__
+ 		, (ret == _SUCCESS) ? "OK" : "Fail", cnt, rtw_get_passing_time_ms(start), value32);
+ 
++	NX4_DIAG("FW_CHECKSUM ret=%d polls=%u elapsed_ms=%d MCUFWDL=0x%08x cannot_io=%u", ret, cnt, rtw_get_passing_time_ms(start), value32, RTW_CANNOT_IO(adapter));
+ 	return ret;
+ }
+ 
+@@ -839,6 +841,7 @@
+ exit:
+ 	RTW_INFO("%s: Polling FW ready %s! (%u, %dms), REG_MCUFWDL:0x%08x\n", __FUNCTION__
+ 		, (ret == _SUCCESS) ? "OK" : "Fail", cnt, rtw_get_passing_time_ms(start), value32);
++	NX4_DIAG("FW_READY ret=%d polls=%u elapsed_ms=%d MCUFWDL=0x%08x cannot_io=%u", ret, cnt, rtw_get_passing_time_ms(start), value32, RTW_CANNOT_IO(adapter));
+ 	return ret;
+ }
+ 
+@@ -876,8 +879,10 @@
+ 	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
+ #endif
+ 
++	NX4_DIAG("FW enter wow=%u i_cut=%u", bUsedWoWLANFw, IS_VENDOR_8188E_I_CUT_SERIES(padapter));
+ 	pFirmware = (PRT_FIRMWARE_8188E)rtw_zmalloc(sizeof(RT_FIRMWARE_8188E));
+ 	if (!pFirmware) {
++		NX4_DIAG("FW allocation failed");
+ 		rtStatus = _FAIL;
+ 		goto exit;
+ 	}
+@@ -957,6 +962,7 @@
+ 		break;
+ 	}
+ 
++	NX4_DIAG("FW image source=%u length=%u", pFirmware->eFWSource, pFirmware->ulFwLength);
+ 	tmp_fw_len = IS_VENDOR_8188E_I_CUT_SERIES(padapter) ? FW_8188E_SIZE_2 : FW_8188E_SIZE;
+ 
+ 	if ((pFirmware->ulFwLength - 32) > tmp_fw_len) {
+@@ -974,6 +980,7 @@
+ 	pHalData->firmware_version =  le16_to_cpu(pFwHdr->Version);
+ 	pHalData->firmware_sub_version = pFwHdr->Subversion;
+ 	pHalData->FirmwareSignature = le16_to_cpu(pFwHdr->Signature);
++	NX4_DIAG("FW header version=0x%x sub=0x%x signature=0x%x", pHalData->firmware_version, pHalData->firmware_sub_version, pHalData->FirmwareSignature);
+ 
+ 	RTW_INFO("%s: fw_ver=%x fw_subver=%04x sig=0x%x, Month=%02x, Date=%02x, Hour=%02x, Minute=%02x\n",
+ 		__FUNCTION__, pHalData->firmware_version, pHalData->firmware_sub_version, pHalData->FirmwareSignature
+@@ -1000,6 +1007,8 @@
+ 		rtw_write8(padapter, REG_MCUFWDL, rtw_read8(padapter, REG_MCUFWDL) | FWDL_ChkSum_rpt);
+ 
+ 		rtStatus = _WriteFW(padapter, pFirmwareBuf, FirmwareLen);
++		if (write_fw <= 8)
++			NX4_DIAG("FW_WRITE attempt=%u length=%u ret=%d", write_fw, FirmwareLen, rtStatus);
+ 		if (rtStatus != _SUCCESS)
+ 			continue;
+ 
+@@ -1016,6 +1025,7 @@
+ 		goto fwdl_stat;
+ 
+ fwdl_stat:
++	NX4_DIAG("FW_DOWNLOAD result=%d attempts=%u elapsed_ms=%d cannot_io=%u", rtStatus, write_fw, rtw_get_passing_time_ms(fwdl_start_time), RTW_CANNOT_IO(padapter));
+ 	RTW_INFO("FWDL %s. write_fw:%u, %dms\n"
+ 		 , (rtStatus == _SUCCESS) ? "success" : "fail"
+ 		 , write_fw
+@@ -1028,6 +1038,7 @@
+ 
+ 	rtl8188e_InitializeFirmwareVars(padapter);
+ 
++	NX4_DIAG("FW exit ret=%d", rtStatus);
+ 	return rtStatus;
+ }
+ 
+--- a/hal/rtl8188e/usb/usb_halinit.c
++++ b/hal/rtl8188e/usb/usb_halinit.c
+@@ -15,6 +15,7 @@
+ #define _HCI_HAL_INIT_C_
+ 
+ #include <drv_types.h>
++#include <nx4_diag.h>
+ #include <rtl8188e_hal.h>
+ #include "hal_com_h2c.h"
+ 
+@@ -129,11 +130,13 @@
+ 
+ 
+ 	rtw_hal_get_hwreg(padapter, HW_VAR_APFM_ON_MAC, &bMacPwrCtrlOn);
++	NX4_DIAG("POWER_HW cached_mac_on=%u", bMacPwrCtrlOn);
+ 	if (bMacPwrCtrlOn == _TRUE)
+ 		return _SUCCESS;
+ 
+ 	if (!HalPwrSeqCmdParsing(padapter, PWR_CUT_ALL_MSK, PWR_FAB_ALL_MSK, PWR_INTF_USB_MSK, Rtl8188E_NIC_PWR_ON_FLOW)) {
+ 		RTW_ERR("%s: run power on flow fail\n", __func__);
++		NX4_DIAG("POWER_HW power_sequence ret=0");
+ 		return _FAIL;
+ 	}
+ 
+@@ -153,6 +156,7 @@
+ 	bMacPwrCtrlOn = _TRUE;
+ 	rtw_hal_set_hwreg(padapter, HW_VAR_APFM_ON_MAC, &bMacPwrCtrlOn);
+ 
++	NX4_DIAG("POWER_HW success ret=1 CR_written=0x%04x", value16);
+ 	return _SUCCESS;
+ 
+ }
+@@ -1299,7 +1303,7 @@
+ 
+ #define HAL_INIT_PROFILE_TAG(stage) do { hal_init_stages_timestamp[(stage)] = rtw_get_current_time(); } while (0)
+ #else
+-#define HAL_INIT_PROFILE_TAG(stage) do {} while (0)
++#define HAL_INIT_PROFILE_TAG(stage) do { NX4_DIAG("HAL_STAGE %s", #stage); } while (0)
+ #endif /* DBG_HAL_INIT_PROFILING */
+ 
+ 
+@@ -1307,7 +1311,9 @@
+ 
+ 	HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_BEGIN);
+ 
++	NX4_DIAG("HAL_USB enter keepfw=%u suspend=%u rfstate=%u mp=%u", pwrctrlpriv->bkeepfwalive, pwrctrlpriv->bInSuspend, pwrctrlpriv->rf_pwrstate, Adapter->registrypriv.mp_mode);
+ 	if (pwrctrlpriv->bkeepfwalive) {
++		NX4_DIAG("HAL_USB keepfw path");
+ 		_ps_open_RF(Adapter);
+ 
+ 		if (pHalData->bIQKInitialized) {
+@@ -1332,6 +1338,7 @@
+ 
+ 	HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_INIT_PW_ON);
+ 	status = rtw_hal_power_on(Adapter);
++	NX4_DIAG("HAL_RESULT rtw_hal_power_on(Adapter) ret=%u", status);
+ 	if (status == _FAIL) {
+ 		goto exit;
+ 	}
+@@ -1373,10 +1380,12 @@
+ 	HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_DOWNLOAD_FW);
+ 	if (Adapter->registrypriv.mp_mode == 0) {
+ 		status = rtl8188e_FirmwareDownload(Adapter, _FALSE);
++		NX4_DIAG("HAL_RESULT rtl8188e_FirmwareDownload(Adapter, _FALSE) ret=%u", status);
+ 		if (status != _SUCCESS) {
+ 			RTW_INFO("%s: Download Firmware failed!!\n", __FUNCTION__);
+ 			pHalData->bFWReady = _FALSE;
+ 			pHalData->fw_ractrl = _FALSE;
++			NX4_DIAG("HAL_USB early return ret=%u FW_ready=%u", status, pHalData->bFWReady);
+ 			return status;
+ 		} else {
+ 			pHalData->bFWReady = _TRUE;
+@@ -1391,6 +1400,7 @@
+ 	HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_MAC);
+ #if (HAL_MAC_ENABLE == 1)
+ 	status = PHY_MACConfig8188E(Adapter);
++	NX4_DIAG("HAL_RESULT PHY_MACConfig8188E(Adapter) ret=%u", status);
+ 	if (status == _FAIL) {
+ 		RTW_INFO(" ### Failed to init MAC ......\n ");
+ 		goto exit;
+@@ -1403,6 +1413,7 @@
+ 	HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_BB);
+ #if (HAL_BB_ENABLE == 1)
+ 	status = PHY_BBConfig8188E(Adapter);
++	NX4_DIAG("HAL_RESULT PHY_BBConfig8188E(Adapter) ret=%u", status);
+ 	if (status == _FAIL) {
+ 		RTW_INFO(" ### Failed to init BB ......\n ");
+ 		goto exit;
+@@ -1413,6 +1424,7 @@
+ 	HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_RF);
+ #if (HAL_RF_ENABLE == 1)
+ 	status = PHY_RFConfig8188E(Adapter);
++	NX4_DIAG("HAL_RESULT PHY_RFConfig8188E(Adapter) ret=%u", status);
+ 	if (status == _FAIL) {
+ 		RTW_INFO(" ### Failed to init RF ......\n ");
+ 		goto exit;
+@@ -1422,6 +1434,7 @@
+ 	HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_EFUSE_PATCH);
+ #if defined(CONFIG_IOL_EFUSE_PATCH)
+ 	status = rtl8188e_iol_efuse_patch(Adapter);
++	NX4_DIAG("HAL_RESULT rtl8188e_iol_efuse_patch(Adapter) ret=%u", status);
+ 	if (status == _FAIL) {
+ 		RTW_INFO("%s  rtl8188e_iol_efuse_patch failed\n", __FUNCTION__);
+ 		goto exit;
+@@ -1432,6 +1445,7 @@
+ 
+ 	HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_INIT_LLTT);
+ 	status =  InitLLTTable(Adapter, txpktbuf_bndy);
++	NX4_DIAG("HAL_RESULT  InitLLTTable(Adapter, txpktbuf_bndy) ret=%u", status);
+ 	if (status == _FAIL) {
+ 		goto exit;
+ 	}
+@@ -1653,6 +1667,7 @@
+ 
+ 
+ 
++	NX4_DIAG("HAL_USB exit ret=%u elapsed_ms=%d FW_ready=%u", status, rtw_get_passing_time_ms(init_start_time), pHalData->bFWReady);
+ 	return status;
+ }
+ 
+--- /dev/null
++++ b/include/nx4_diag.h
+@@ -0,0 +1,7 @@
++/* NX4D1: diagnostic observations only; no additional device register reads. */
++#ifndef NX4_DIAG_H
++#define NX4_DIAG_H
++extern int nx4_diag;
++#define NX4_DIAG(fmt, ...) do { if (nx4_diag) \
++ printk(KERN_NOTICE "NX4D1 %s:%d " fmt "\n", __func__, __LINE__, ##__VA_ARGS__); } while (0)
++#endif
+--- a/os_dep/linux/os_intfs.c
++++ b/os_dep/linux/os_intfs.c
+@@ -15,6 +15,7 @@
+ #define _OS_INTFS_C_
+ 
+ #include <drv_types.h>
++#include <nx4_diag.h>
+ #include <hal_data.h>
+ 
+ #if defined(PLATFORM_LINUX) && defined (PLATFORM_WINDOWS)
+@@ -27,6 +28,13 @@
+ MODULE_DESCRIPTION("Realtek Wireless Lan Driver");
+ MODULE_AUTHOR("Realtek Semiconductor Corp.");
+ MODULE_VERSION(DRIVERVERSION);
++MODULE_INFO(nx4_diagnostic, "NX4D1_20261104");
++int nx4_diag = 1;
++module_param(nx4_diag, int, 0644);
++MODULE_PARM_DESC(nx4_diag, "NX4D1 initialization diagnostics; 0 disables added logs");
++static char *nx4_diag_id = "NX4D1_20261104";
++module_param(nx4_diag_id, charp, 0444);
++
+ 
+ /* module param defaults */
+ int rtw_chip_version = 0x00;
+@@ -1849,6 +1857,7 @@
+ 			RTW_INFO(FUNC_ADPT_FMT " start RTW_XMIT_THREAD\n", FUNC_ADPT_ARG(padapter));
+ 			padapter->xmitThread = kthread_run(rtw_xmit_thread, padapter, "RTW_XMIT_THREAD");
+ 			if (IS_ERR(padapter->xmitThread)) {
++				NX4_DIAG("THREAD xmitThread failed errno=%ld", PTR_ERR(padapter->xmitThread));
+ 				padapter->xmitThread = NULL;
+ 				_status = _FAIL;
+ 			}
+@@ -1862,6 +1871,7 @@
+ 			RTW_INFO(FUNC_ADPT_FMT " start RTW_RECV_THREAD\n", FUNC_ADPT_ARG(padapter));
+ 			padapter->recvThread = kthread_run(rtw_recv_thread, padapter, "RTW_RECV_THREAD");
+ 			if (IS_ERR(padapter->recvThread)) {
++				NX4_DIAG("THREAD recvThread failed errno=%ld", PTR_ERR(padapter->recvThread));
+ 				padapter->recvThread = NULL;
+ 				_status = _FAIL;
+ 			}
+@@ -1874,6 +1884,7 @@
+ 			RTW_INFO(FUNC_ADPT_FMT " start RTW_CMD_THREAD\n", FUNC_ADPT_ARG(padapter));
+ 			padapter->cmdThread = kthread_run(rtw_cmd_thread, padapter, "RTW_CMD_THREAD");
+ 			if (IS_ERR(padapter->cmdThread)) {
++				NX4_DIAG("THREAD cmdThread failed errno=%ld", PTR_ERR(padapter->cmdThread));
+ 				padapter->cmdThread = NULL;
+ 				_status = _FAIL;
+ 			}
+@@ -1888,6 +1899,7 @@
+ 		RTW_INFO(FUNC_ADPT_FMT " start RTW_EVENT_THREAD\n", FUNC_ADPT_ARG(padapter));
+ 		padapter->evtThread = kthread_run(event_thread, padapter, "RTW_EVENT_THREAD");
+ 		if (IS_ERR(padapter->evtThread)) {
++				NX4_DIAG("THREAD evtThread failed errno=%ld", PTR_ERR(padapter->evtThread));
+ 			padapter->evtThread = NULL;
+ 			_status = _FAIL;
+ 		}
+@@ -1895,6 +1907,7 @@
+ #endif
+ 
+ 	rtw_hal_start_thread(padapter);
++	NX4_DIAG("THREADS exit ret=%u", _status);
+ 	return _status;
+ 
+ }
+@@ -3209,6 +3222,7 @@
+ 
+ 	RTW_INFO(FUNC_NDEV_FMT" , bup=%d\n", FUNC_NDEV_ARG(pnetdev), padapter->bup);
+ 
++	NX4_DIAG("OPEN_INNER enter if=%s bup=%u stopped=%u removed=%u hwinit=%u", pnetdev->name, padapter->bup, rtw_is_drv_stopped(padapter), rtw_is_surprise_removed(padapter), rtw_get_hw_init_completed(padapter));
+ 	padapter->netif_up = _TRUE;
+ 
+ #ifdef CONFIG_PLATFORM_INTEL_BYT
+@@ -3235,7 +3249,9 @@
+ 		rtw_clr_surprise_removed(padapter);
+ 		rtw_clr_drv_stopped(padapter);
+ 
++		NX4_DIAG("CALL rtw_hal_init(padapter)");
+ 		status = rtw_hal_init(padapter);
++		NX4_DIAG("RESULT rtw_hal_init(padapter) ret=%u", status);
+ 		if (status == _FAIL) {
+ 			goto netdev_open_error;
+ 		}
+@@ -3246,7 +3262,9 @@
+ 		RTW_INFO("MAC Address = "MAC_FMT"\n", MAC_ARG(pnetdev->dev_addr));
+ 
+ #ifndef RTW_HALMAC
++		NX4_DIAG("CALL rtw_start_drv_threads(padapter)");
+ 		status = rtw_start_drv_threads(padapter);
++		NX4_DIAG("RESULT rtw_start_drv_threads(padapter) ret=%u", status);
+ 		if (status == _FAIL) {
+ 			RTW_INFO("Initialize driver software resource Failed!\n");
+ 			goto netdev_open_error;
+@@ -3261,7 +3279,9 @@
+ #endif
+ 
+ #ifndef RTW_HALMAC
++		NX4_DIAG("CALL rtw_intf_start");
+ 		rtw_intf_start(padapter);
++		NX4_DIAG("RESULT rtw_intf_start returned");
+ #endif /* !RTW_HALMAC */
+ 
+ #ifdef CONFIG_IOCTL_CFG80211
+@@ -3329,6 +3349,7 @@
+ 
+ 	RTW_INFO("-871x_drv - drv_open, bup=%d\n", padapter->bup);
+ 
++	NX4_DIAG("OPEN_INNER success ret=0 bup=%u", padapter->bup);
+ 	return 0;
+ 
+ netdev_open_error:
+@@ -3347,6 +3368,7 @@
+ 
+ 	RTW_INFO("-871x_drv - drv_open fail, bup=%d\n", padapter->bup);
+ 
++	NX4_DIAG("OPEN_INNER failure ret=-1 (EPERM) last_status=%u stopped=%u removed=%u", status, rtw_is_drv_stopped(padapter), rtw_is_surprise_removed(padapter));
+ 	return -1;
+ 
+ }
+@@ -3357,7 +3379,9 @@
+ 	_adapter *padapter = (_adapter *)rtw_netdev_priv(pnetdev);
+ 	struct pwrctrl_priv *pwrctrlpriv = adapter_to_pwrctl(padapter);
+ 
++	NX4_DIAG("OPEN enter if=%s suspend=%u keepfw=%u rfstate=%u primary=%u", pnetdev->name, pwrctrlpriv->bInSuspend, pwrctrlpriv->bkeepfwalive, pwrctrlpriv->rf_pwrstate, is_primary_adapter(padapter));
+ 	if (pwrctrlpriv->bInSuspend == _TRUE) {
++		NX4_DIAG("OPEN suspend skip ret=0");
+ 		RTW_INFO(" [WARN] "ADPT_FMT" %s  failed, bInSuspend=%d\n", ADPT_ARG(padapter), __func__, pwrctrlpriv->bInSuspend);
+ 		return 0;
+ 	}
+@@ -3377,6 +3401,7 @@
+ 		rtw_start_auto_ap(padapter);
+ #endif
+ 
++	NX4_DIAG("OPEN exit ret=%d", ret);
+ 	return ret;
+ }
+ 
+@@ -3394,7 +3419,9 @@
+ 	rtw_clr_drv_stopped(padapter);
+ 	/* padapter->bup = _TRUE; */
+ 
++	NX4_DIAG("IPS_OPEN hal enter");
+ 	status = rtw_hal_init(padapter);
++	NX4_DIAG("IPS_OPEN hal ret=%d", status);
+ 	if (status == _FAIL) {
+ 		goto netdev_open_error;
+ 	}
+--- a/os_dep/linux/usb_intf.c
++++ b/os_dep/linux/usb_intf.c
+@@ -16,6 +16,7 @@
+ #define _HCI_INTF_C_
+ 
+ #include <drv_types.h>
++#include <nx4_diag.h>
+ #include <hal_data.h>
+ 
+ #include <platform_ops.h>
+@@ -1423,6 +1424,7 @@
+ 
+ 	/* RTW_INFO("+rtw_drv_init\n"); */
+ 
++	NX4_DIAG("PROBE enter vid=0x%x pid=0x%x", pdid->idVendor, pdid->idProduct);
+ 	/* step 0. */
+ 	process_spec_devid(pdid);
+ 
+@@ -1503,6 +1505,7 @@
+ exit:
+ 	if (!status)
+ 		pr_info("In %s return -ENODEV\n", __func__);
++	NX4_DIAG("PROBE exit raw=%d errno=%d", status, status == _SUCCESS ? 0 : -ENODEV);
+ 	return status == _SUCCESS ? 0 : -ENODEV;
+ }
+ 
+@@ -1587,6 +1590,7 @@
+ static int __init rtw_drv_entry(void)
+ {
+ 	int ret = 0;
++	NX4_DIAG("MODULE diagnostic=NX4D1_20261104");
+ 
+ 	RTW_PRINT("module init start\n");
+ 	dump_drv_version(RTW_DBGDUMP);
+--- a/os_dep/linux/usb_ops_linux.c
++++ b/os_dep/linux/usb_ops_linux.c
+@@ -15,6 +15,7 @@
+ #define _USB_OPS_LINUX_C_
+ 
+ #include <drv_types.h>
++#include <nx4_diag.h>
+ #include <hal_data.h>
+ #include <rtw_sreset.h>
+ 
+@@ -36,6 +37,7 @@
+ 	u8 reqtype;
+ 	u8 *pIo_buf;
+ 	int vendorreq_times = 0;
++	static atomic_t nx4_usb_errors = ATOMIC_INIT(0);
+ 
+ #if (defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C))
+ #define REG_ON_SEC 0x00
+@@ -190,6 +192,8 @@
+ 	_exit_critical_mutex(&pdvobjpriv->usb_vendor_req_mutex, NULL);
+ #endif
+ exit:
++	if (nx4_diag && status != len && atomic_inc_return(&nx4_usb_errors) <= 8)
++		NX4_DIAG("USB_CTRL failure status=%d expected_len=%u request=0x%x value=0x%x index=0x%x direction=%u tries=%d cannot_io=%u (first8)", status, len, request, value, index, requesttype, vendorreq_times, RTW_CANNOT_IO(padapter));
+ 	return status;
+ 
+ }

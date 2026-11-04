@@ -1,0 +1,37 @@
+--- a/vehicle/NEMESIS.sh
++++ b/vehicle/NEMESIS.sh
+@@ -7,11 +7,33 @@
+ PROC=${NX4_PROC_ROOT:-/proc}
+ SHELLBIN=${NX4_SHELL:-/system/bin/sh}
+ PAYLOAD=$USB/NX4_DIAG
+-ACTION=$(cat "$USB/NX4_DIAG_ACTION.txt" 2>/dev/null | tr -d '\r\n')
+ mkdir -p "$BASE" || exit 1
+ LAUNCH=$USB/NX4_DIAG_LAUNCH.txt
+ exec > "$LAUNCH" 2>&1
+-echo "NX4D1 launcher action=$ACTION script_revision=2"
++echo 'NX4D1 launcher script_revision=3'
++ACTION_FILE=$USB/NX4_DIAG_ACTION.txt
++if [ ! -f "$ACTION_FILE" ]; then
++    echo "STOP: ACTION_FILE_MISSING $ACTION_FILE"
++    echo 'Copy NX4_DIAG_ACTION.txt from USB_READY to the USB root.'
++    exit 1
++fi
++if [ ! -r "$ACTION_FILE" ]; then
++    echo "STOP: ACTION_FILE_UNREADABLE $ACTION_FILE"
++    exit 1
++fi
++ACTION=
++IFS= read -r ACTION < "$ACTION_FILE"
++# Literal CR and UTF-8 BOM: no external text-processing commands needed.
++CR='+'
++BOM='﻿'
++ACTION=${ACTION%"$CR"}
++ACTION=${ACTION#"$BOM"}
++echo "action=[$ACTION]"
++case "$ACTION" in
++    ARM|COLLECT|RESTORE) ;;
++    *) echo 'STOP: ACTION_FILE_INVALID_OR_EMPTY; first line must be ARM, COLLECT, or RESTORE'; exit 1;;
++esac
+ date
+ # Android toolbox id may not implement -u. Inspect the exact plain-id UID field.
+ ID_TEXT=$(id 2>&1)

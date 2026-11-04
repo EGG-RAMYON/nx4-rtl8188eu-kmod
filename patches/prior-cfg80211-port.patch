@@ -1,0 +1,125 @@
+diff --git a/Makefile b/Makefile
+index 2aa7eef..a61c552 100755
+--- a/Makefile
++++ b/Makefile
+@@ -8,13 +8,9 @@ EXTRA_CFLAGS += -Wno-unused-parameter
+ EXTRA_CFLAGS += -Wno-unused-function
+ EXTRA_CFLAGS += -Wno-unused
+ EXTRA_CFLAGS += -Wno-address
+-EXTRA_CFLAGS += -Wno-cast-function-type
+ #EXTRA_CFLAGS += -Wno-discarded-qualifiers
+ EXTRA_CFLAGS += -Wno-uninitialized
+-EXTRA_CFLAGS += -Wno-sometimes-uninitialized
+-EXTRA_CFLAGS += -Wno-enum-conversion
+ EXTRA_CFLAGS += -Wno-vla
+-EXTRA_CFLAGS += -Wno-date-time
+ 
+ 
+ GCC_VER_49 := $(shell echo `$(CC) -dumpversion | cut -f1-2 -d.` \>= 4.9 | bc )
+diff --git a/core/rtw_debug.c b/core/rtw_debug.c
+index d9752bb..1c114ec 100644
+--- a/core/rtw_debug.c
++++ b/core/rtw_debug.c
+@@ -5112,6 +5112,7 @@ int proc_get_efuse_map(struct seq_file *m, void *v)
+ 	ips_mode = pwrctrlpriv->ips_mode;
+ 	rtw_pm_set_ips(padapter, IPS_NONE);
+ 
++	#ifdef CONFIG_EFUSE_CONFIG_FILE
+ 	if (pHalData->efuse_file_status == EFUSE_FILE_LOADED) {
+ 		RTW_PRINT_SEL(m, "File eFuse Map loaded! file path:%s\nDriver eFuse Map From File\n", EFUSE_MAP_PATH);
+ 		if (pHalData->bautoload_fail_flag)
+@@ -5120,7 +5121,9 @@ int proc_get_efuse_map(struct seq_file *m, void *v)
+ 		RTW_PRINT_SEL(m, "Open File eFuse Map Fail ! file path:%s\nDriver eFuse Map From Default\n", EFUSE_MAP_PATH);
+ 		if (pHalData->bautoload_fail_flag)
+ 			RTW_PRINT_SEL(m, "HW Autoload fail!!!\n");
+-	} else {
++	} else
++	#endif
++	{
+ 		RTW_PRINT_SEL(m, "Driver eFuse Map From HW\n");
+ 		if (pHalData->bautoload_fail_flag)
+ 			RTW_PRINT_SEL(m, "HW Autoload fail!!!\n");
+diff --git a/hal/hal_intf.c b/hal/hal_intf.c
+index 95966c8..6d25d0e 100644
+--- a/hal/hal_intf.c
++++ b/hal/hal_intf.c
+@@ -939,7 +939,7 @@ s32 c2h_handler(_adapter *adapter, u8 id, u8 seq, u8 plen, u8 *payload)
+ #endif
+ 	case C2H_EXTEND:
+ 		sub_id = payload[0];
+-		__attribute__ ((__fallthrough__));
++		/* fall through */
+ 
+ 	default:
+ 		if (phydm_c2H_content_parsing(adapter_to_phydm(adapter), id, plen, payload) != TRUE)
+diff --git a/os_dep/linux/ioctl_cfg80211.c b/os_dep/linux/ioctl_cfg80211.c
+index 69abf47..34c8c55 100644
+--- a/os_dep/linux/ioctl_cfg80211.c
++++ b/os_dep/linux/ioctl_cfg80211.c
+@@ -1144,6 +1144,14 @@ check_bss:
+ 		#endif
+ 
+ 		if (check_fwstate(pmlmepriv, WIFI_MONITOR_STATE) != _TRUE) {
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
++                        cfg80211_connect_result(wdev_to_ndev(pwdev), cur_network->network.MacAddress
++                                , pmlmepriv->assoc_req + sizeof(struct rtw_ieee80211_hdr_3addr) + 2
++                                , pmlmepriv->assoc_req_len - sizeof(struct rtw_ieee80211_hdr_3addr) - 2
++                                , pmlmepriv->assoc_rsp + sizeof(struct rtw_ieee80211_hdr_3addr) + 6
++                                , pmlmepriv->assoc_rsp_len - sizeof(struct rtw_ieee80211_hdr_3addr) - 6
++                                , WLAN_STATUS_SUCCESS, GFP_ATOMIC);
++#else
+                         struct cfg80211_bss *bss;
+                         bss = cfg80211_get_bss(pwdev->wiphy, NULL, cur_network->network.MacAddress, NULL, 0, 
+                                 IEEE80211_BSS_TYPE_ANY, IEEE80211_PRIVACY_ANY);
+@@ -1153,6 +1161,7 @@ check_bss:
+                                 , pmlmepriv->assoc_rsp + sizeof(struct rtw_ieee80211_hdr_3addr) + 6
+                                 , pmlmepriv->assoc_rsp_len - sizeof(struct rtw_ieee80211_hdr_3addr) - 6
+                                 , WLAN_STATUS_SUCCESS, GFP_ATOMIC, NL80211_TIMEOUT_UNSPECIFIED);
++#endif
+                 }
+ 		#if defined(RHEL79) && (LINUX_VERSION_CODE < KERNEL_VERSION(3, 11, 0) || defined(COMPAT_KERNEL_RELEASE))
+ 		RTW_INFO("pwdev->sme_state(a)=%d\n", pwdev->sme_state);
+@@ -2399,7 +2408,7 @@ static int cfg80211_rtw_change_iface(struct wiphy *wiphy,
+ 	case NL80211_IFTYPE_P2P_CLIENT:
+ 		is_p2p = _TRUE;
+ 	#endif
+-	__attribute__ ((__fallthrough__));
++	/* fall through */
+ 	case NL80211_IFTYPE_STATION:
+ 		networkType = Ndis802_11Infrastructure;
+ 
+@@ -2424,7 +2433,7 @@ static int cfg80211_rtw_change_iface(struct wiphy *wiphy,
+ 	case NL80211_IFTYPE_P2P_GO:
+ 		is_p2p = _TRUE;
+ 	#endif
+-	__attribute__ ((__fallthrough__));
++	/* fall through */
+ 	case NL80211_IFTYPE_AP:
+ 		networkType = Ndis802_11APMode;
+ 
+diff --git a/os_dep/linux/ioctl_cfg80211.h b/os_dep/linux/ioctl_cfg80211.h
+index 16927e4..01b6e76 100644
+--- a/os_dep/linux/ioctl_cfg80211.h
++++ b/os_dep/linux/ioctl_cfg80211.h
+@@ -363,7 +363,7 @@ void rtw_cfg80211_deinit_rfkill(struct wiphy *wiphy);
+ #define rtw_cfg80211_connect_result(wdev, bssid, req_ie, req_ie_len, resp_ie, resp_ie_len, status, gfp) cfg80211_connect_result(wdev_to_ndev(wdev), bssid, req_ie, req_ie_len, resp_ie, resp_ie_len, status, gfp)
+ 
+ #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0) && !defined(RHEL79))
+-#define rtw_cfg80211_disconnected(wdev, reason, ie, ie_len, locally_generated, gfp) cfg80211_disconnected(wdev_to_ndev(wdev), reason, ie, ie_len, ie_len, gfp)
++#define rtw_cfg80211_disconnected(wdev, reason, ie, ie_len, locally_generated, gfp) cfg80211_disconnected(wdev_to_ndev(wdev), reason, ie, ie_len, gfp)
+ #else
+ #define rtw_cfg80211_disconnected(wdev, reason, ie, ie_len, locally_generated, gfp) cfg80211_disconnected(wdev_to_ndev(wdev), reason, ie, ie_len, locally_generated, gfp)
+ #endif
+diff --git a/os_dep/linux/rtw_cfgvendor.c b/os_dep/linux/rtw_cfgvendor.c
+index c4cc53e..40d5d39 100644
+--- a/os_dep/linux/rtw_cfgvendor.c
++++ b/os_dep/linux/rtw_cfgvendor.c
+@@ -145,7 +145,7 @@ struct sk_buff *rtw_cfg80211_vendor_event_alloc(
+ 	struct sk_buff *skb;
+ 
+ #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 1, 0))
+-	skb = cfg80211_vendor_event_alloc(wiphy, NULL, len, event_id, gfp);
++	skb = cfg80211_vendor_event_alloc(wiphy, len, event_id, gfp);
+ #else
+ 	skb = cfg80211_vendor_event_alloc(wiphy, wdev, len, event_id, gfp);
+ #endif
