@@ -7,7 +7,7 @@
 - 대상 커널: Linux 3.18.24-tcc / ARMv7 / Android 4.4.2, ipTIME N150L (`0bda:8179`).
 - 기반 드라이버: Realtek v5.3.9_28540.20180627, aircrack-ng/rtl8188eus 고정 커밋.
 - NX4D1 초기화 계측 소스와 커널 일치 모듈이 있습니다. 모듈 삽입은 확인됐지만, `wlan0` 생성 및 무선 통신은 확인되지 않았습니다.
-- [Releases](https://github.com/EGG-RAMYON/nx4-rtl8188eu-kmod/releases)에 실험용 `r8188eu.ko`가 있습니다. 파일의 vermagic과 ARM 아키텍처는 NX4 커널 기준이며, 차종·헤드유닛·펌웨어 차이에 따른 호환성은 보장하지 않습니다.
+- NX4 커널과 vermagic을 맞춘 실험용 `r8188eu.ko`를 Release asset으로 배포할 예정입니다. 파일은 ARMv7 대상이며, 차종·헤드유닛·펌웨어 차이에 따른 호환성은 보장하지 않습니다.
 - 공개 저장소에는 차량별 커널 설정, 차량 수집 로그, NEMESIS.data, 제조사 커널 소스 분할 파일, 툴체인, `.ko`가 포함되지 않습니다. `.ko`는 Release asset으로만 제공합니다. USB_READY는 실행 완성품이 아닌 소스 템플릿입니다.
 
 ## 구성
