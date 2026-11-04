@@ -2,7 +2,7 @@
 
 - 2026-11-04: Linux 3.18 cfg80211 API 포팅 및 NX4D1 초기화 진단 로그. 상세 변경은 patches/ 참조.
 - R2: printf 의존성 및 id -u 기반 root 검사 수정.
-- R3: tr 없이 ARM/COLLECT/RESTORE 읽기; LF/CRLF/BOM 및 오류 구분. 실차 미검증.
+- R3: tr 없이 ARM/COLLECT/RESTORE 읽기; LF/CRLF/BOM 및 오류 구분. R3 게시 당시 실차 동작은 미검증이었으며, 이후 시험 결과는 VALIDATION.md에 기록.
 - 2026-11-05: GitHub 소스 공개 구성, GPL v2 전문, 출처/범위 문서 및 수정 파일 끝의 고지 추가. 실행 로직 변경 없음.
 
 수정 고지 추가 대상:
